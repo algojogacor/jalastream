@@ -85,7 +85,10 @@ async function fetchAndParseLive() {
     }
 
     matches.sort((a, b) => a.sort - b.sort);
-    return matches;
+    
+    // Separate: only live + completed for the "live" display
+    const liveAndDone = matches.filter(m => m.sort === 0 || m.sort === 2);
+    return { all: matches, live: liveAndDone };
   } catch (err) {
     console.error('[ESPN]', err.message);
     return [];
@@ -94,7 +97,8 @@ async function fetchAndParseLive() {
 
 async function fetchAndParseSchedule() {
   try {
-    const all = await fetchAndParseLive();
+    const data = await fetchAndParseLive();
+    const all = data.all || data.live || [];
     const upcoming = all.filter(m => m.sort === 1);
     const completed = all.filter(m => m.sort === 2);
     const days = [];
@@ -115,7 +119,8 @@ async function fetchAndParseSchedule() {
 }
 
 async function fetchStreamUrl(matchId) {
-  const all = await fetchAndParseLive();
+  const data = await fetchAndParseLive();
+  const all = data.all || data.live || [];
   const match = all.find(m => m.id === matchId || String(m.id) === String(matchId));
   if (!match) return { type: 'none', message: 'Match tidak ditemukan' };
   if (!match.embedUrl) return { type: 'none', message: 'Stream belum tersedia' };

@@ -79,7 +79,7 @@ app.get('/proxy/stream/:matchId', async (req, res) => {
 });
 
 app.get('/api/live', async (req, res) => {
-  try { const matches = await fetchAndParseLive(); res.json({ matches }); }
+  try { const data = await fetchAndParseLive(); res.json({ matches: data.live || [] }); }
   catch (err) { res.status(502).json({ error: 'Failed to fetch live matches' }); }
 });
 
