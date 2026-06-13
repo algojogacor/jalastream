@@ -40,6 +40,18 @@ async function fetchAndParseLive() {
       const homeCode = home.team?.abbreviation?.toLowerCase() || '';
       const awayCode = away.team?.abbreviation?.toLowerCase() || '';
 
+      // Parse ESPN date to WIB
+      const dateStr = status?.type?.detail || '';
+      let clock = dateStr;
+      try {
+        const d = new Date(dateStr + ' EDT');
+        if (!isNaN(d.getTime())) {
+          const wib = new Date(d.getTime() + (11 * 60 * 60 * 1000)); // EDT→WIB = +11h
+          clock = wib.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }) 
+                + ' · ' + wib.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+        }
+      } catch {}
+
       matches.push({
         id: String(event.id),
         home: home.team?.displayName || home.team?.name || '???',
@@ -49,8 +61,8 @@ async function fetchAndParseLive() {
         awayShort: away.team?.abbreviation || '???',
         awayFlag: `${ESPN_CDN}/${awayCode}.png`,
         score: isUpcoming ? null : `${home.score || 0} – ${away.score || 0}`,
-        clock: status?.displayClock || status?.detail || '',
-        league: comp.venue?.fullName || status?.detail || 'Piala Dunia 2026',
+        clock,
+        league: 'Piala Dunia 2026',
         sport: 'football',
         sort: isLive ? 0 : isUpcoming ? 1 : 2, // live first, then upcoming, then completed
         embedUrl: isLive ? getEmbedUrl(home.team?.displayName, away.team?.displayName) : null,
