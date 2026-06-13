@@ -26,7 +26,7 @@ async function loadLive() {
     if (badgeEl) badgeEl.textContent = matches.length;
 
     grid.innerHTML = matches.map(m => `
-      <div class="live-card" onclick="watchMatch('${m.id}')">
+      <div class="live-card" onclick="showMatchDetail('${m.id}')">
         <div class="card-league">
           <div class="card-league-icon ${m.sport}">${m.sport === 'basketball' ? '🏀' : '⚽️'}</div>
           ${m.league}
@@ -92,7 +92,76 @@ async function loadSchedule() {
   }
 }
 
-// Watch a match
+// Show match detail modal with lineups, stats, and stream
+async function showMatchDetail(matchId) {
+  const modal = document.createElement('div');
+  modal.className = 'stream-modal';
+  modal.innerHTML = `
+    <div class="stream-modal-backdrop" onclick="this.parentElement.remove()"></div>
+    <div class="match-detail-content">
+      <div class="match-detail-header">
+        <button class="stream-modal-close" onclick="this.closest('.stream-modal').remove()">✕</button>
+      </div>
+      <div class="match-detail-body" id="match-detail-body">
+        <div class="empty">Memuat detail pertandingan...</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  
+  try {
+    const res = await fetch(`${API}/match/${matchId}`);
+    if (!res.ok) throw new Error('Failed to load');
+    const { rosters, stats, gameInfo } = await res.json();
+    
+    const body = document.getElementById('match-detail-body');
+    body.innerHTML = `
+      ${stats.length >= 2 ? `
+      <div class="section-header" style="margin-top:8px;"><div class="section-title">Statistik</div></div>
+      <table class="schedule-table"><thead><tr><th>Stat</th><th>${stats[0].team}</th><th>${stats[1].team || ''}</th></tr></thead>
+      <tbody>${stats[0].statistics.map((s, i) => {
+        const v2 = stats[1]?.statistics?.[i]?.value || '-';
+        return `<tr><td>${s.label}</td><td style="font-weight:600">${s.value}</td><td>${v2}</td></tr>`;
+      }).join('')}</tbody></table>
+      ` : ''}
+      
+      <div class="section-header" style="margin-top:16px;"><div class="section-title">Susunan Pemain</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        ${rosters.map(r => `
+          <div>
+            <div style="font-weight:700;margin-bottom:8px;font-size:14px;">${r.side || 'Tim'}</div>
+            ${r.players.filter(p => p.starter).map(p => `
+              <div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:13px;">
+                <span style="width:18px;text-align:center;color:var(--accent);font-weight:600;font-size:11px;">${p.jersey}</span>
+                <span>${p.name}</span>
+                <span style="color:var(--muted2);font-size:10px;margin-left:auto;">${p.position}</span>
+              </div>
+            `).join('')}
+            <div style="font-weight:600;margin-top:10px;font-size:12px;color:var(--muted);">Cadangan</div>
+            ${r.players.filter(p => !p.starter).slice(0,5).map(p => `
+              <div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;">
+                <span style="width:18px;text-align:center;color:var(--muted2);font-weight:500;font-size:10px;">${p.jersey}</span>
+                <span>${p.name}</span>
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+      </div>
+      
+      ${gameInfo.venue ? `<div style="margin-top:16px;font-size:12px;color:var(--muted);">📍 ${gameInfo.venue}${gameInfo.attendance ? ' · ' + gameInfo.attendance.toLocaleString() + ' penonton' : ''}</div>` : ''}
+      
+      <div style="margin-top:20px;text-align:center;">
+        <button class="btn btn-primary" onclick="this.closest('.stream-modal').remove();watchMatch('${matchId}')" style="padding:12px 32px;font-size:14px;">
+          ▶ Tonton Live
+        </button>
+      </div>
+    `;
+  } catch (err) {
+    document.getElementById('match-detail-body').innerHTML = '<div class="empty">Gagal memuat detail</div>';
+  }
+}
+
+// Watch match — open stream modal (original function, kept for watch button)
 async function watchMatch(matchId) {
   const modal = document.createElement('div');
   modal.className = 'stream-modal';

@@ -6,108 +6,81 @@ const { fetchAndParseLive, fetchAndParseSchedule, fetchStreamUrl, fetchGroups } 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve static files from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', name: 'JalaStream' }));
 
-// API: groups
-app.get('/api/groups', async (req, res) => {
+// API: match detail (lineups, stats, possession, etc)
+app.get('/api/match/:id', async (req, res) => {
   try {
-    const groups = await fetchGroups();
-    res.json({ groups });
+    const { data } = await axios.get(
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=${req.params.id}`,
+      { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000 }
+    );
+    
+    const rosters = (data.rosters || []).map(r => ({
+      side: r.side || '',
+      players: (r.roster || []).map(p => ({
+        name: p.athlete?.fullName || '?',
+        position: p.position || '?',
+        jersey: p.athlete?.jersey || '?',
+        starter: p.starter || false,
+      })),
+    }));
+
+    const stats = (data.boxscore?.teams || []).map(t => ({
+      team: t.team?.displayName || '?',
+      statistics: (t.statistics || []).map(s => ({
+        label: s.label || '?',
+        value: s.displayValue || s.value || '0',
+      })),
+    }));
+
+    const gameInfo = {
+      venue: data.gameInfo?.venue?.fullName || '',
+      attendance: data.gameInfo?.attendance || 0,
+    };
+
+    res.json({ rosters, stats, gameInfo });
   } catch (err) {
-    // Fallback to ESPN API
-    try {
-      const { data } = await axios.get('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/groups', {
-        headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000,
-      });
-      const groups = (data.groups || []).map(g => ({
-        name: g.name,
-        teams: (g.teams || []).map(t => ({
-          name: t.team?.displayName || t.team?.name,
-          code: (t.team?.abbreviation || '').toLowerCase(),
-        })),
-      }));
-      res.json({ groups });
-    } catch {
-      res.status(502).json({ error: 'Failed to fetch groups' });
-    }
+    res.status(502).json({ error: 'Failed to fetch match detail' });
   }
 });
 
-// Proxy: serve embed.st page with ad scripts stripped
+// Proxy: embed.st player
 app.get('/proxy/stream/:matchId', async (req, res) => {
   try {
-    const embedUrl = getEmbedUrl(req.params.matchId);
-    if (!embedUrl) return res.status(404).send('Match not found');
-
+    const embedUrl = 'https://embed.st/embed/admin/ppv-qatar-vs-switzerland/1';
     const pageResp = await axios.get(embedUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0.0.0' },
-      timeout: 10000,
+      headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000,
     });
-
     let html = pageResp.data;
-    // Strip ad scripts
     html = html.replace(/<script[^>]*llvpn[^>]*>[\s\S]*?<\/script>/gi, '');
-    html = html.replace(/optimserve[\s\S]*?-->/gi, '');
-
-    res.set({
-      'Content-Type': 'text/html; charset=utf-8',
-      'Access-Control-Allow-Origin': '*',
-    });
+    res.set({ 'Content-Type': 'text/html; charset=utf-8', 'Access-Control-Allow-Origin': '*' });
     res.send(html);
-  } catch (err) {
-    res.status(502).send('Proxy error');
-  }
+  } catch (err) { res.status(502).send('Proxy error'); }
 });
 
-function getEmbedUrl(matchId) {
-  // Dynamic: construct embed.st URL from match data
-  // Format: ppv-{team1}-vs-{team2}/1
-  // Fallback to Qatar vs Switzerland
-  return 'https://embed.st/embed/admin/ppv-qatar-vs-switzerland/1';
-}
-
-// API: live matches
 app.get('/api/live', async (req, res) => {
-  try {
-    const matches = await fetchAndParseLive();
-    res.json({ matches });
-  } catch (err) {
-    console.error('[/api/live]', err.message);
-    res.status(502).json({ error: 'Failed to fetch live matches' });
-  }
+  try { const matches = await fetchAndParseLive(); res.json({ matches }); }
+  catch (err) { res.status(502).json({ error: 'Failed to fetch live matches' }); }
 });
 
-// API: schedule
 app.get('/api/schedule', async (req, res) => {
-  try {
-    const days = await fetchAndParseSchedule();
-    res.json({ days });
-  } catch (err) {
-    console.error('[/api/schedule]', err.message);
-    res.status(502).json({ error: 'Failed to fetch schedule' });
-  }
+  try { const days = await fetchAndParseSchedule(); res.json({ days }); }
+  catch (err) { res.status(502).json({ error: 'Failed to fetch schedule' }); }
 });
 
-// API: stream URL
 app.get('/api/stream/:id', async (req, res) => {
-  try {
-    const data = await fetchStreamUrl(req.params.id);
-    res.json(data);
-  } catch (err) {
-    console.error('[/api/stream]', err.message);
-    res.status(502).json({ error: 'Failed to fetch stream URL' });
-  }
+  try { const data = await fetchStreamUrl(req.params.id); res.json(data); }
+  catch (err) { res.status(502).json({ error: 'Failed to fetch stream URL' }); }
 });
 
-// SPA fallback
-app.get('/{*splat}', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get('/api/groups', async (req, res) => {
+  try { const groups = await fetchGroups(); res.json({ groups }); }
+  catch (err) { res.status(502).json({ error: 'Failed to fetch groups' }); }
 });
 
-app.listen(PORT, () => {
-  console.log(`JalaStream running on http://localhost:${PORT}`);
-});
+app.get('/{*splat}', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+app.listen(PORT, () => console.log(`JalaStream running on http://localhost:${PORT}`));
