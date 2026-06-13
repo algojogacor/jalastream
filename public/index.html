@@ -241,8 +241,20 @@
     .hero-title { font-size: 28px; }
     .stats-row { grid-template-columns: repeat(2, 1fr); }
     .live-grid { grid-template-columns: 1fr; }
-    header { padding: 0 14px; }
-    .container { padding: 24px 14px 48px; }
+    header { padding: 0 10px; }
+    .container { padding: 24px 12px 48px; }
+    .search-box { width: 120px; }
+    .search-box:focus { width: 150px; }
+    nav { gap: 1px; }
+    nav a { padding: 5px 8px; font-size: 12px; }
+    
+    /* Scrollable table wrapper */
+    .schedule-table-wrapper {
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      margin: 0 -12px; padding: 0 12px;
+    }
+    .schedule-table { font-size: 11px; min-width: 600px; }
+    .schedule-table th, .schedule-table td { padding: 8px 6px; }
   }
 </style>
 </head>

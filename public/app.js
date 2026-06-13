@@ -78,7 +78,7 @@ async function loadSchedule() {
       return;
     }
 
-    tbody.innerHTML = days.flatMap(day => 
+    tbody.innerHTML = '<div class="schedule-table-wrapper"><table class="schedule-table"><tbody>' + days.flatMap(day => 
       day.matches.map(m => `
         <tr>
           <td class="time">${m.time}</td>
@@ -86,7 +86,7 @@ async function loadSchedule() {
           <td class="league">${m.league}</td>
         </tr>
       `)
-    ).join('');
+    ).join('') + '</tbody></table></div>';
   } catch (err) {
     tbody.innerHTML = '<tr><td colspan="3" class="empty">Gagal memuat</td></tr>';
   }
@@ -187,7 +187,7 @@ async function loadGroups() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const { groups } = await res.json();
     
-    el.innerHTML = groups.map(g => `
+    el.innerHTML = '<div class="schedule-table-wrapper">' + groups.map(g => `
       <div class="day-group">
         <div class="day-header">
           <span class="day-name">${g.name}</span>
@@ -211,7 +211,7 @@ async function loadGroups() {
           </tbody>
         </table>
       </div>
-    `).join('');
+    `).join('') + '</div>';
     el.dataset.loaded = '1';
   } catch (err) {
     el.innerHTML = '<div class="empty">Gagal memuat data grup</div>';
