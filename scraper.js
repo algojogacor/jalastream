@@ -40,15 +40,17 @@ async function fetchAndParseLive() {
       const homeCode = home.team?.abbreviation?.toLowerCase() || '';
       const awayCode = away.team?.abbreviation?.toLowerCase() || '';
 
-      // Parse ESPN date to WIB
-      const dateStr = status?.type?.detail || '';
-      let clock = dateStr;
+      // Parse ESPN GMT time to WIB
+      const dateStr = event.competitions?.[0]?.date;
+      let clock = '';
       try {
-        const d = new Date(dateStr + ' EDT');
-        if (!isNaN(d.getTime())) {
-          const wib = new Date(d.getTime() + (11 * 60 * 60 * 1000)); // EDT→WIB = +11h
-          clock = wib.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }) 
-                + ' · ' + wib.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+        if (dateStr) {
+          const d = new Date(dateStr);
+          if (!isNaN(d.getTime())) {
+            const wib = new Date(d.getTime() + (7 * 60 * 60 * 1000)); // GMT→WIB = +7h
+            clock = wib.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }) 
+                  + ' · ' + wib.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+          }
         }
       } catch {}
 
