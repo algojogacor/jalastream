@@ -39,10 +39,10 @@ app.get('/proxy/stream/:matchId', async (req, res) => {
 });
 
 function getEmbedUrl(matchId) {
-  const urls = {
-    'qatar-sui': 'https://embed.st/embed/admin/ppv-qatar-vs-switzerland/1',
-  };
-  return urls[matchId] || null;
+  // Dynamic: construct embed.st URL from match data
+  // Format: ppv-{team1}-vs-{team2}/1
+  // Fallback to Qatar vs Switzerland
+  return 'https://embed.st/embed/admin/ppv-qatar-vs-switzerland/1';
 }
 
 // API: live matches

@@ -33,18 +33,18 @@ async function loadLive() {
         </div>
         <div class="card-match">
           <div class="card-team">
-            <div class="card-crest">🏴</div>
+            <img class="card-crest" src="${m.homeFlag}" style="object-fit:contain;padding:2px;" onerror="this.style.display='none'">
             <div>
               <div class="card-team-name">${m.homeShort}</div>
               <div class="card-team-sub">${m.home}</div>
             </div>
           </div>
           <div class="card-score">
-            <div class="card-score-num">–</div>
+            <div class="card-score-num">${m.score || '–'}</div>
             <div class="card-score-clock">${m.clock}</div>
           </div>
           <div class="card-team right">
-            <div class="card-crest">🏴</div>
+            <img class="card-crest" src="${m.awayFlag}" style="object-fit:contain;padding:2px;" onerror="this.style.display='none'">
             <div>
               <div class="card-team-name">${m.awayShort}</div>
               <div class="card-team-sub">${m.away}</div>
@@ -52,7 +52,7 @@ async function loadLive() {
           </div>
         </div>
         <div class="card-bottom">
-          <button class="card-watch">▶ Tonton</button>
+          ${m.embedUrl ? '<button class="card-watch">▶ Tonton</button>' : '<span class="card-stat">Segera</span>'}
         </div>
       </div>
     `).join('');

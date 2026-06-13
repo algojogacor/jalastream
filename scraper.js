@@ -1,62 +1,120 @@
-// JalaStream — Live match data + embed.st JW Player streams
-// embed.st: no X-Frame-Options, clean JW Player, no ads
+// JalaStream — ESPN API + embed.st proxy
+// Match data from ESPN (auto-sorted: live first → upcoming → completed)
+// Stream via embed.st proxy
 
-const MATCHES = [
-  {
-    id: "qatar-sui",
-    home: "Qatar",
-    homeShort: "QAT",
-    away: "Switzerland",
-    awayShort: "SUI",
-    league: "Piala Dunia 2026 · Grup B",
-    clock: "Minggu, 02:00 WIB",
-    sport: "football",
-    // embed.st JW Player — M3U8 via lb10.strmd.st
-    embedUrl: "https://embed.st/embed/admin/ppv-qatar-vs-switzerland/1",
-  },
-  {
-    id: "usa-par",
-    home: "USA",
-    homeShort: "USA",
-    away: "Paraguay",
-    awayShort: "PAR",
-    league: "Piala Dunia 2026 · Grup A",
-    clock: "45+'",
-    sport: "football",
-    // placeholder — cari di worldcupscore.me
-    embedUrl: null,
-  },
-];
+const axios = require('axios');
 
-const SCHEDULE = [
-  {
-    label: "Hari ini",
-    date: new Date().toISOString().split('T')[0],
-    matches: [
-      { time: "19:00", home: "Brasil", away: "Argentina", league: "Piala Dunia · Grup C", sport: "football" },
-      { time: "20:30", home: "Denver Nuggets", away: "Phoenix Suns", league: "NBA Playoffs · Game 5", sport: "basketball" },
-    ],
-  },
-  {
-    label: "Besok",
-    date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-    matches: [
-      { time: "01:00", home: "Meksiko", away: "Kanada", league: "Piala Dunia · Grup A", sport: "football" },
-      { time: "19:00", home: "Jepang", away: "Korea Selatan", league: "Piala Dunia · Grup E", sport: "football" },
-    ],
-  },
-];
+const ESPN_API = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+const ESPN_CDN = 'https://a.espncdn.com/i/teamlogos/countries/500';
 
-async function fetchAndParseLive() { return MATCHES; }
-async function fetchAndParseSchedule() { return SCHEDULE; }
+// Map country codes from ESPN to embed.st URL patterns
+function getEmbedUrl(team1, team2) {
+  const slug = `${team1.toLowerCase()}-vs-${team2.toLowerCase()}`.replace(/\s+/g, '-');
+  return `https://embed.st/embed/admin/ppv-${slug}/1`;
+}
+
+async function fetchAndParseLive() {
+  try {
+    const { data } = await axios.get(ESPN_API, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0.0.0' },
+      timeout: 10000,
+    });
+
+    const events = data.events || [];
+    const matches = [];
+
+    for (const event of events) {
+      const comp = event.competitions?.[0];
+      if (!comp) continue;
+      
+      const teams = comp.competitors || [];
+      if (teams.length < 2) continue;
+      
+      const home = teams[0];
+      const away = teams[1];
+      const status = event.status?.type;
+      const isLive = status?.state === 'in';
+      const isCompleted = status?.state === 'post';
+      const isUpcoming = status?.state === 'pre';
+
+      const homeCode = home.team?.abbreviation?.toLowerCase() || '';
+      const awayCode = away.team?.abbreviation?.toLowerCase() || '';
+
+      matches.push({
+        id: String(event.id),
+        home: home.team?.displayName || home.team?.name || '???',
+        homeShort: home.team?.abbreviation || '???',
+        homeFlag: `${ESPN_CDN}/${homeCode}.png`,
+        away: away.team?.displayName || away.team?.name || '???',
+        awayShort: away.team?.abbreviation || '???',
+        awayFlag: `${ESPN_CDN}/${awayCode}.png`,
+        score: isUpcoming ? null : `${home.score || 0} – ${away.score || 0}`,
+        clock: status?.displayClock || status?.detail || '',
+        league: comp.venue?.fullName || status?.detail || 'Piala Dunia 2026',
+        sport: 'football',
+        sort: isLive ? 0 : isUpcoming ? 1 : 2, // live first, then upcoming, then completed
+        embedUrl: isLive ? getEmbedUrl(home.team?.displayName, away.team?.displayName) : null,
+      });
+    }
+
+    // Sort: live first, then upcoming by date, then completed
+    matches.sort((a, b) => a.sort - b.sort);
+    return matches;
+  } catch (err) {
+    console.error('[ESPN]', err.message);
+    return [];
+  }
+}
+
+async function fetchAndParseSchedule() {
+  try {
+    const all = await fetchAndParseLive();
+    const upcoming = all.filter(m => m.sort === 1);
+    const completed = all.filter(m => m.sort === 2);
+
+    const days = [];
+    if (upcoming.length) {
+      days.push({
+        label: 'Mendatang',
+        date: new Date().toISOString().split('T')[0],
+        matches: upcoming.map(m => ({
+          time: m.clock,
+          home: m.home,
+          away: m.away,
+          league: m.league,
+          sport: m.sport,
+        })),
+      });
+    }
+    if (completed.length) {
+      days.push({
+        label: 'Selesai',
+        date: new Date().toISOString().split('T')[0],
+        matches: completed.map(m => ({
+          time: 'FT',
+          home: `${m.home} ${m.score}`,
+          away: m.away,
+          league: m.league,
+          sport: m.sport,
+        })),
+      });
+    }
+
+    return days;
+  } catch (err) {
+    return [];
+  }
+}
 
 async function fetchStreamUrl(matchId) {
-  const match = MATCHES.find(m => m.id === matchId);
-  if (!match) return { type: "none", message: "Match tidak ditemukan" };
-  if (!match.embedUrl) return { type: "none", message: "Stream belum tersedia" };
+  const all = await fetchAndParseLive();
+  const match = all.find(m => m.id === matchId || String(m.id) === String(matchId));
   
+  if (!match) return { type: 'none', message: 'Match tidak ditemukan' };
+  if (!match.embedUrl) return { type: 'none', message: 'Stream belum tersedia' };
+
   return {
-    type: "hls",
+    type: 'hls',
     src: `/proxy/stream/${match.id}`,
   };
 }
