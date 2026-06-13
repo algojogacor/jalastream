@@ -1,31 +1,32 @@
-// JalaStream — Sports scraper
-// Data source: hardcoded real matches (API integration coming in v2)
+// JalaStream — Match data + YouTube stream URLs
+// Source: CazéTV YouTube (Brazil) — requires VPN Brazil on device
 
-// Real WC 2026 and NBA match data as of June 2026
-// Will be replaced with live API integration
-const LIVE_MATCHES = [
+const MATCHES = [
   {
-    id: "4318059",
+    id: "wc-usa-par",
     home: "USA",
     homeShort: "USA",
     away: "Paraguay",
     awayShort: "PAR",
-    league: "Piala Dunia 2026",
-    clock: "67'",
+    league: "Piala Dunia 2026 · Grup A",
+    clock: "LIVE",
     sport: "football",
+    // CazéTV YouTube live stream — butuh VPN Brazil di device
+    youtubeId: "7EFTDmwcleI", // CazéTV — AO VIVO USA vs Paraguay
   },
   {
-    id: "wc-germany-france",
+    id: "wc-ger-fra",
     home: "Jerman",
     homeShort: "GER",
     away: "Prancis",
     awayShort: "FRA",
-    league: "Piala Dunia 2026",
+    league: "Piala Dunia 2026 · Grup B",
     clock: "82'",
     sport: "football",
+    youtubeId: "LIVE_CAZETV",
   },
   {
-    id: "nba-lakers-heat",
+    id: "nba-lal-mia",
     home: "LA Lakers",
     homeShort: "LAL",
     away: "Miami Heat",
@@ -33,9 +34,10 @@ const LIVE_MATCHES = [
     league: "NBA Playoffs",
     clock: "Q3 · 4:12",
     sport: "basketball",
+    youtubeId: null,
   },
   {
-    id: "nba-celtics-warriors",
+    id: "nba-bos-gsw",
     home: "Boston Celtics",
     homeShort: "BOS",
     away: "Golden State",
@@ -43,6 +45,7 @@ const LIVE_MATCHES = [
     league: "NBA Playoffs",
     clock: "Q4 · 2:38",
     sport: "basketball",
+    youtubeId: null,
   },
 ];
 
@@ -70,7 +73,7 @@ const SCHEDULE = [
 ];
 
 async function fetchAndParseLive() {
-  return LIVE_MATCHES;
+  return MATCHES;
 }
 
 async function fetchAndParseSchedule() {
@@ -78,10 +81,21 @@ async function fetchAndParseSchedule() {
 }
 
 async function fetchStreamUrl(matchId) {
-  const iframeUrl = 'https://nia01.x6tc9bgreatlyty35swriting.cfd/';
+  const match = MATCHES.find(m => m.id === matchId);
+  if (!match || !match.youtubeId) {
+    return {
+      type: "none",
+      message: "Stream belum tersedia untuk pertandingan ini",
+    };
+  }
+
   return {
-    iframeUrl,
-    fallbackUrl: 'https://nia01.x6tc9bgreatlyty35swriting.cfd/',
+    type: "youtube",
+    // Embed URL — YouTube akan handle geo-block sendiri
+    // Lo perlu VPN Brazil di device buat nonton
+    embedUrl: `https://www.youtube.com/embed/${match.youtubeId}?autoplay=1`,
+    // Link langsung ke YouTube app
+    watchUrl: `https://www.youtube.com/watch?v=${match.youtubeId}`,
   };
 }
 

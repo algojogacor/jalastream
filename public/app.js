@@ -88,18 +88,34 @@ async function watchMatch(matchId) {
 
   try {
     const res = await fetch(`${API}/stream/${matchId}`);
-    const { iframeUrl } = await res.json();
+    const data = await res.json();
 
     const body = modal.querySelector('.stream-modal-body');
-    body.innerHTML = `
-      <iframe
-        src="${iframeUrl}"
-        allowfullscreen
-        allow="autoplay; encrypted-media"
-        referrerpolicy="no-referrer"
-        style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"
-      ></iframe>
-    `;
+
+    if (data.type === 'youtube') {
+      // YouTube embed — clean, official, HD
+      body.innerHTML = `
+        <iframe
+          src="${data.embedUrl}"
+          allowfullscreen
+          allow="autoplay; encrypted-media; picture-in-picture"
+          style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"
+        ></iframe>
+      `;
+    } else if (data.type === 'none') {
+      body.innerHTML = `<div class="empty">${data.message || 'Stream belum tersedia'}</div>`;
+    } else {
+      // Fallback: direct iframe URL
+      body.innerHTML = `
+        <iframe
+          src="${data.iframeUrl || data.embedUrl}"
+          allowfullscreen
+          allow="autoplay; encrypted-media"
+          referrerpolicy="no-referrer"
+          style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"
+        ></iframe>
+      `;
+    }
   } catch (err) {
     modal.querySelector('.stream-modal-body').innerHTML =
       '<div class="empty">Gagal memuat stream. Coba lagi.</div>';
