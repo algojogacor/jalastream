@@ -141,3 +141,23 @@ document.addEventListener('DOMContentLoaded', () => {
   loadLive();
   setInterval(loadLive, 45000);
 });
+
+// Search filter
+function searchMatches(query) {
+  const cards = document.querySelectorAll('.live-card');
+  const q = query.toLowerCase();
+  cards.forEach(card => {
+    const text = card.textContent.toLowerCase();
+    card.style.display = q ? (text.includes(q) ? '' : 'none') : '';
+  });
+}
+
+// Dark/light mode toggle
+function toggleTheme() {
+  const btn = document.querySelector('.theme-btn');
+  if (document.body.classList.toggle('light')) {
+    btn.textContent = '🌙';
+  } else {
+    btn.textContent = '☀️';
+  }
+}

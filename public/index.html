@@ -30,6 +30,19 @@
     --radius-sm: 8px;
   }
 
+  /* ── LIGHT MODE ── */
+  body.light {
+    --bg: #fafafa;
+    --surface: rgba(0,0,0,0.03);
+    --surface2: rgba(0,0,0,0.06);
+    --border: rgba(0,0,0,0.08);
+    --border-hover: rgba(0,0,0,0.15);
+    --text: #111;
+    --muted: #666;
+    --muted2: #999;
+  }
+  body.light header { background: rgba(250,250,250,0.88); }
+
   html, body {
     background: var(--bg);
     color: var(--text);
@@ -70,6 +83,19 @@
   nav a:hover, nav a.active { color: var(--text); background: var(--surface); }
 
   .header-right { display: flex; align-items: center; gap: 12px; }
+  .search-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 12px; font-size: 13px; color: var(--text); outline: none;
+    width: 180px; transition: all 0.15s;
+  }
+  .search-box::placeholder { color: var(--muted2); }
+  .search-box:focus { border-color: var(--border-hover); width: 220px; }
+  .theme-btn {
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 10px; cursor: pointer; font-size: 14px; color: var(--muted2);
+    transition: all 0.15s;
+  }
+  .theme-btn:hover { border-color: var(--border-hover); color: var(--text); }
   .live-dot {
     width: 8px; height: 8px; border-radius: 50%; background: var(--live);
     box-shadow: 0 0 0 0 rgba(239,68,68,0.5);
@@ -229,6 +255,8 @@
     <a href="#" onclick="showTab('schedule')">Jadwal</a>
   </nav>
   <div class="header-right">
+    <input class="search-box" type="text" placeholder="Cari tim atau pertandingan..." oninput="searchMatches(this.value)">
+    <button class="theme-btn" onclick="toggleTheme()" title="Mode terang/gelap">☀️</button>
     <div class="live-dot"></div>
     <span class="live-count" id="live-count">—</span>
   </div>
