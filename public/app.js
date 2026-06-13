@@ -1,74 +1,98 @@
 // JalaStream — Client-side renderer
 const API = '/api';
-
-// DOM helpers
 const $ = (sel) => document.querySelector(sel);
 
 // Load live matches
 async function loadLive() {
-  const grid = document.querySelector('.live-grid');
+  const grid = $('#live-grid');
   if (!grid) return;
-
-  grid.innerHTML = '<div class="empty">Memuat pertandingan...</div>';
+  grid.innerHTML = '<div class="empty">Memuat...</div>';
 
   try {
     const res = await fetch(`${API}/live`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const { matches } = await res.json();
 
-    const countEl = $('.live-count');
+    const countEl = $('#live-count');
+    const badgeEl = $('#live-badge-count');
     if (!matches.length) {
-      grid.innerHTML = '<div class="empty">Tidak ada pertandingan live saat ini</div>';
-      if (countEl) countEl.textContent = '0 LIVE';
+      grid.innerHTML = '<div class="empty">Tidak ada pertandingan live</div>';
+      if (countEl) countEl.textContent = '0';
+      if (badgeEl) badgeEl.textContent = '0';
       return;
     }
 
-    if (countEl) countEl.textContent = `${matches.length} LIVE`;
+    if (countEl) countEl.textContent = matches.length;
+    if (badgeEl) badgeEl.textContent = matches.length;
 
     grid.innerHTML = matches.map(m => `
-      <div class="live-card" data-match-id="${m.id}">
-        <div class="live-card-header">
-          <div class="league-badge">
-            <div class="league-icon ${m.sport === 'basketball' ? 'basketball' : 'football'}">${m.sport === 'basketball' ? '🏀' : '⚽️'}</div>
-            ${m.league}
-          </div>
-          <div class="live-badge"><div class="dot"></div>LIVE</div>
+      <div class="live-card" onclick="watchMatch('${m.id}')">
+        <div class="card-league">
+          <div class="card-league-icon ${m.sport}">${m.sport === 'basketball' ? '🏀' : '⚽️'}</div>
+          ${m.league}
         </div>
-        <div class="match-row">
-          <div class="team-side">
-            <div class="team-crest">${m.homeFlag || '🏴'}</div>
+        <div class="card-match">
+          <div class="card-team">
+            <div class="card-crest">🏴</div>
             <div>
-              <div class="team-name">${m.homeShort}</div>
-              <div class="team-short">${m.home}</div>
+              <div class="card-team-name">${m.homeShort}</div>
+              <div class="card-team-sub">${m.home}</div>
             </div>
           </div>
-          <div class="score-block">
-            <div class="score">–</div>
-            <div class="match-clock">${m.clock}</div>
+          <div class="card-score">
+            <div class="card-score-num">–</div>
+            <div class="card-score-clock">${m.clock}</div>
           </div>
-          <div class="team-side right">
-            <div class="team-crest">${m.awayFlag || '🏴'}</div>
+          <div class="card-team right">
+            <div class="card-crest">🏴</div>
             <div>
-              <div class="team-name">${m.awayShort}</div>
-              <div class="team-short">${m.away}</div>
+              <div class="card-team-name">${m.awayShort}</div>
+              <div class="card-team-sub">${m.away}</div>
             </div>
           </div>
         </div>
-        <div class="match-extra">
-          <button class="watch-btn" onclick="watchMatch('${m.id}')">
-            <svg viewBox="0 0 10 10"><polygon points="2,1 9,5 2,9"/></svg>
-            Tonton
-          </button>
+        <div class="card-bottom">
+          <button class="card-watch">▶ Tonton</button>
         </div>
       </div>
     `).join('');
   } catch (err) {
-    console.error('Failed to load live:', err);
-    grid.innerHTML = '<div class="empty">Gagal memuat data. Coba refresh.</div>';
+    console.error('Live load error:', err);
+    grid.innerHTML = '<div class="empty">Gagal memuat</div>';
   }
 }
 
-// Watch a match — modal iframe (YouTube HD embed)
+// Load schedule
+async function loadSchedule() {
+  const tbody = $('#schedule-body');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="3" class="empty">Memuat...</td></tr>';
+
+  try {
+    const res = await fetch(`${API}/schedule`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { days } = await res.json();
+
+    if (!days.length) {
+      tbody.innerHTML = '<tr><td colspan="3" class="empty">Belum ada jadwal</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = days.flatMap(day => 
+      day.matches.map(m => `
+        <tr>
+          <td class="time">${m.time}</td>
+          <td class="teams">${m.home} <span style="color:var(--muted)">VS</span> ${m.away}</td>
+          <td class="league">${m.league}</td>
+        </tr>
+      `)
+    ).join('');
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty">Gagal memuat</td></tr>';
+  }
+}
+
+// Watch a match
 async function watchMatch(matchId) {
   const modal = document.createElement('div');
   modal.className = 'stream-modal';
@@ -79,9 +103,7 @@ async function watchMatch(matchId) {
         <span>JalaStream Live</span>
         <button class="stream-modal-close" onclick="this.closest('.stream-modal').remove()">✕</button>
       </div>
-      <div class="stream-modal-body">
-        <div class="empty">Memuat stream...</div>
-      </div>
+      <div class="stream-modal-body"><div class="empty">Memuat...</div></div>
     </div>
   `;
   document.body.appendChild(modal);
@@ -90,114 +112,32 @@ async function watchMatch(matchId) {
     const res = await fetch(`${API}/stream/${matchId}`);
     const data = await res.json();
     const body = modal.querySelector('.stream-modal-body');
-    
+
     if (data.type === 'hls' && data.src) {
-      // Proxied embed.st — Clappr player with ads stripped
-      body.innerHTML = `
-        <iframe
-          src="${data.src}"
-          allowfullscreen
-          allow="autoplay; encrypted-media"
-          style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"
-        ></iframe>
-      `;
+      body.innerHTML = `<iframe src="${data.src}" allowfullscreen allow="autoplay; encrypted-media" style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"></iframe>`;
     } else if (data.type === 'youtube') {
-      body.innerHTML = `
-        <iframe
-          src="${data.embedUrl}"
-          allowfullscreen
-          allow="autoplay; encrypted-media; picture-in-picture"
-          style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"
-        ></iframe>
-      `;
+      body.innerHTML = `<iframe src="${data.embedUrl}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"></iframe>`;
     } else if (data.type === 'iframe' && data.iframeUrl) {
-      // worldcupscore / embed.st — no X-Frame-Options
-      body.innerHTML = `
-        <iframe
-          src="${data.iframeUrl}"
-          allowfullscreen
-          allow="autoplay; encrypted-media"
-          style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"
-        ></iframe>
-      `;
+      body.innerHTML = `<iframe src="${data.iframeUrl}" allowfullscreen allow="autoplay; encrypted-media" style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"></iframe>`;
     } else {
       body.innerHTML = `<div class="empty">${data.message || 'Stream belum tersedia'}</div>`;
     }
   } catch (err) {
-    modal.querySelector('.stream-modal-body').innerHTML =
-      '<div class="empty">Gagal memuat stream.</div>';
+    modal.querySelector('.stream-modal-body').innerHTML = '<div class="empty">Gagal memuat</div>';
   }
-}
-
-// Load schedule
-async function loadSchedule() {
-  const container = document.getElementById('tab-schedule');
-  if (!container) return;
-
-  try {
-    const res = await fetch(`${API}/schedule`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { days } = await res.json();
-
-    if (!days.length) {
-      container.innerHTML = '<div class="section-label">Jadwal</div><div class="empty">Belum ada jadwal</div>';
-      return;
-    }
-
-    container.innerHTML = `
-      <div class="filters">
-        <button class="filter-pill active" onclick="filterSport(this,'all')">Semua</button>
-        <button class="filter-pill" onclick="filterSport(this,'football')">⚽️ Sepakbola</button>
-        <button class="filter-pill" onclick="filterSport(this,'basketball')">🏀 Basket</button>
-      </div>
-      ${days.map(day => `
-        <div class="day-group">
-          <div class="day-header">
-            <span class="day-name">${day.label}</span>
-            <span>${day.date}</span>
-            <span class="match-count">${day.matches.length} pertandingan</span>
-          </div>
-          ${day.matches.map(m => `
-            <div class="fixture-row" data-sport="${m.sport}">
-              <div class="fixture-time">${m.time || '--:--'}</div>
-              <div class="fixture-league ${m.sport}" style="background:rgba(${m.sport === 'basketball' ? '249,115,22' : '34,197,94'},0.15);color:${m.sport === 'basketball' ? '#f97316' : '#22c55e'};border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;">${m.sport === 'basketball' ? '🏀' : '⚽️'}</div>
-              <div class="fixture-teams">
-                <span class="fixture-team">${m.home}</span>
-                <span class="vs-sep">VS</span>
-                <span class="fixture-team">${m.away}</span>
-              </div>
-              <div class="fixture-meta">${m.league}</div>
-            </div>
-          `).join('')}
-        </div>
-      `).join('')}
-    `;
-  } catch (err) {
-    console.error('Failed to load schedule:', err);
-    container.innerHTML = '<div class="section-label">Jadwal</div><div class="empty">Gagal memuat jadwal.</div>';
-  }
-}
-
-// Filter schedule by sport
-function filterSport(btn, sport) {
-  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.fixture-row').forEach(row => {
-    row.style.display = (sport === 'all' || row.dataset.sport === sport) ? '' : 'none';
-  });
 }
 
 // Tab switching
-function setTab(btn, tab) {
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('tab-live').style.display = tab === 'live' ? '' : 'none';
-  document.getElementById('tab-schedule').style.display = tab === 'schedule' ? '' : 'none';
+function showTab(tab) {
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.querySelector(`nav a[onclick*="${tab}"]`)?.classList.add('active');
+  $('#tab-live').style.display = tab === 'live' ? '' : 'none';
+  $('#tab-schedule').style.display = tab === 'schedule' ? '' : 'none';
   if (tab === 'schedule') loadSchedule();
 }
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
   loadLive();
-  setInterval(loadLive, 45_000);
+  setInterval(loadLive, 45000);
 });
