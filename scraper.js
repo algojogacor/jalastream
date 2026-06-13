@@ -105,13 +105,13 @@ async function fetchAndParseSchedule() {
     if (completed.length) {
       days.push({
         label: 'Selesai', date: new Date().toISOString().split('T')[0],
-        matches: completed.map(m => ({ time: 'FT', home: `${m.home} ${m.score || ''}`, away: m.away, league: m.league, sport: m.sport })),
+        matches: completed.map(m => ({ id: m.id, time: 'FT', home: m.home, away: m.away, league: m.league, sport: m.sport, score: m.score })),
       });
     }
     if (upcoming.length) {
       days.push({
         label: 'Mendatang', date: new Date().toISOString().split('T')[0],
-        matches: upcoming.map(m => ({ time: m.clock, home: m.home, away: m.away, league: m.league, sport: m.sport })),
+        matches: upcoming.map(m => ({ id: m.id, time: m.clock, home: m.home, away: m.away, league: m.league, sport: m.sport })),
       });
     }
     return days;

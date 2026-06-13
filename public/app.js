@@ -48,7 +48,7 @@ async function loadSchedule(){
           ${day.matches.map(m => {
             const hasScore = m.time === 'FT';
             return `
-            <div class="live-card" style="${hasScore ? '' : 'cursor:default;'}${hasScore ? 'cursor:pointer;' : ''}">
+            <div class="live-card"${hasScore ? ` onclick="showMatchDetail('${m.id}')"` : ''}>
               <div class="card-league">
                 <div class="card-league-icon football">⚽️</div>
                 ${m.league}
@@ -58,11 +58,11 @@ async function loadSchedule(){
                   <div class="card-crest">🏴</div>
                   <div>
                     <div class="card-team-name">${m.home.split(' ')[0]}</div>
-                    <div class="card-team-sub">${m.home}</div>
+                    <div class="card-team-sub">${m.home.split(' ').slice(1).join(' ') || m.home}</div>
                   </div>
                 </div>
                 <div class="card-score">
-                  <div class="card-score-num">${hasScore ? m.home.split(' ').slice(-1)[0] : '–'}</div>
+                  <div class="card-score-num">${hasScore ? m.score || '–' : '–'}</div>
                   <div class="card-score-clock">${m.time}</div>
                 </div>
                 <div class="card-team right">
@@ -73,6 +73,7 @@ async function loadSchedule(){
                   </div>
                 </div>
               </div>
+              ${hasScore ? '<div class="card-bottom"><button class="card-watch" onclick="event.stopPropagation();watchMatch(\''+m.id+'\')">▶ Tonton</button></div>' : ''}
             </div>`
           }).join('')}
         </div>
