@@ -12,48 +12,32 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', name: 'JalaStream' }));
 
-// Proxy: get M3U8 stream with proper referer, bypass CDN block
+// Proxy: serve embed.st page with ad scripts stripped
 app.get('/proxy/stream/:matchId', async (req, res) => {
   try {
-    const matchId = req.params.matchId;
-    const embedUrl = getEmbedUrl(matchId);
+    const embedUrl = getEmbedUrl(req.params.matchId);
     if (!embedUrl) return res.status(404).send('Match not found');
 
-    // 1. Fetch embed.st page to get JW Player config
     const pageResp = await axios.get(embedUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0.0.0' },
       timeout: 10000,
     });
-    
-    // 2. Extract M3U8 URL from JW Player setup
-    const m3u8Match = pageResp.data.match(/file:\s*["']([^"']+\.m3u8[^"']*)["']/);
-    if (!m3u8Match) return res.status(502).send('M3U8 not found');
-    const m3u8Url = m3u8Match[1].replace(/\\\//g, '/');
 
-    // 3. Fetch M3U8 with embed.st as referer
-    const streamResp = await axios.get(m3u8Url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0.0.0',
-        'Referer': 'https://embed.st/',
-        'Origin': 'https://embed.st',
-      },
-      timeout: 10000,
-    });
+    let html = pageResp.data;
+    // Strip ad scripts
+    html = html.replace(/<script[^>]*llvpn[^>]*>[\s\S]*?<\/script>/gi, '');
+    html = html.replace(/optimserve[\s\S]*?-->/gi, '');
 
-    // 4. Return M3U8 content with CORS headers
     res.set({
-      'Content-Type': 'application/vnd.apple.mpegurl',
+      'Content-Type': 'text/html; charset=utf-8',
       'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'no-cache',
     });
-    res.send(streamResp.data);
+    res.send(html);
   } catch (err) {
-    console.error('[/proxy/stream]', err.message);
-    res.status(502).send('Proxy error: ' + err.message);
+    res.status(502).send('Proxy error');
   }
 });
 
-// Helper: map match ID to embed.st URL
 function getEmbedUrl(matchId) {
   const urls = {
     'qatar-sui': 'https://embed.st/embed/admin/ppv-qatar-vs-switzerland/1',
