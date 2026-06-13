@@ -56,8 +56,8 @@ async function fetchStreamUrl(matchId) {
   if (!match.embedUrl) return { type: "none", message: "Stream belum tersedia" };
   
   return {
-    type: "iframe",
-    iframeUrl: match.embedUrl,
+    type: "hls",
+    src: `/proxy/stream/${match.id}`,
   };
 }
 

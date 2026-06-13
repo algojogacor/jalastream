@@ -91,7 +91,26 @@ async function watchMatch(matchId) {
     const data = await res.json();
     const body = modal.querySelector('.stream-modal-body');
     
-    if (data.type === 'youtube') {
+    if (data.type === 'hls' && data.src) {
+      // HLS M3U8 stream — native player, no ads
+      if (Hls.isSupported()) {
+        const video = document.createElement('video');
+        video.controls = true;
+        video.autoplay = true;
+        video.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;object-fit:contain;';
+        const hls = new Hls();
+        hls.loadSource(data.src);
+        hls.attachMedia(video);
+        body.innerHTML = '';
+        body.appendChild(video);
+      } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+        body.innerHTML = `
+          <video controls autoplay style="width:100%;height:100%;position:absolute;top:0;left:0;object-fit:contain;">
+            <source src="${data.src}" type="application/vnd.apple.mpegurl">
+          </video>
+        `;
+      }
+    } else if (data.type === 'youtube') {
       body.innerHTML = `
         <iframe
           src="${data.embedUrl}"
