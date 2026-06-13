@@ -1,4 +1,4 @@
-// JalaStream — Client renderer
+// JalaStream — Client renderer v2
 const API = '/api';
 function $(s){return document.querySelector(s)}
 
