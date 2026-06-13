@@ -6,7 +6,7 @@ const ESPN_CDN = 'https://a.espncdn.com/i/teamlogos/countries/500';
 
 // Cache: 60s TTL to avoid rate limits
 let cache = { data: null, at: 0, schedule: null, scheduleAt: 0 };
-const CACHE_TTL = 60_000;
+const CACHE_TTL = 20_000;
 
 // World Cup 2026 official group draw
 const WORLD_CUP_GROUPS = [
