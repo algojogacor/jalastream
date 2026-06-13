@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const axios = require('axios');
-const { fetchAndParseLive, fetchAndParseSchedule, fetchStreamUrl } = require('./scraper');
+const { fetchAndParseLive, fetchAndParseSchedule, fetchStreamUrl, fetchGroups } = require('./scraper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,20 +15,25 @@ app.get('/health', (req, res) => res.json({ status: 'ok', name: 'JalaStream' }))
 // API: groups
 app.get('/api/groups', async (req, res) => {
   try {
-    const { data } = await axios.get('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/groups', {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      timeout: 10000,
-    });
-    const groups = (data.groups || []).map(g => ({
-      name: g.name,
-      teams: (g.teams || []).map(t => ({
-        name: t.team?.displayName || t.team?.name,
-        code: (t.team?.abbreviation || '').toLowerCase(),
-      })),
-    }));
+    const groups = await fetchGroups();
     res.json({ groups });
   } catch (err) {
-    res.status(502).json({ error: 'Failed to fetch groups' });
+    // Fallback to ESPN API
+    try {
+      const { data } = await axios.get('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/groups', {
+        headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000,
+      });
+      const groups = (data.groups || []).map(g => ({
+        name: g.name,
+        teams: (g.teams || []).map(t => ({
+          name: t.team?.displayName || t.team?.name,
+          code: (t.team?.abbreviation || '').toLowerCase(),
+        })),
+      }));
+      res.json({ groups });
+    } catch {
+      res.status(502).json({ error: 'Failed to fetch groups' });
+    }
   }
 });
 
