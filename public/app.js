@@ -112,48 +112,101 @@ async function showMatchDetail(matchId) {
   try {
     const res = await fetch(`${API}/match/${matchId}`);
     if (!res.ok) throw new Error('Failed to load');
-    const { rosters, stats, gameInfo } = await res.json();
+    const { rosters, stats, form, broadcasts, leaders, gameInfo } = await res.json();
     
     const body = document.getElementById('match-detail-body');
     body.innerHTML = `
-      ${stats.length >= 2 ? `
-      <div class="section-header" style="margin-top:8px;"><div class="section-title">Statistik</div></div>
-      <table class="schedule-table"><thead><tr><th>Stat</th><th>${stats[0].team}</th><th>${stats[1].team || ''}</th></tr></thead>
-      <tbody>${stats[0].statistics.map((s, i) => {
-        const v2 = stats[1]?.statistics?.[i]?.value || '-';
-        return `<tr><td>${s.label}</td><td style="font-weight:600">${s.value}</td><td>${v2}</td></tr>`;
-      }).join('')}</tbody></table>
-      ` : ''}
+      <div class="detail-tabs">
+        <button class="detail-tab active" onclick="switchDetailTab(this,'facts')">Facts</button>
+        <button class="detail-tab" onclick="switchDetailTab(this,'lineup')">Lineup</button>
+        <button class="detail-tab" onclick="switchDetailTab(this,'stats')">Stats</button>
+      </div>
       
-      <div class="section-header" style="margin-top:16px;"><div class="section-title">Susunan Pemain</div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        ${rosters.map(r => `
-          <div>
-            <div style="font-weight:700;margin-bottom:8px;font-size:14px;">${r.side || 'Tim'}</div>
-            ${r.players.filter(p => p.starter).map(p => `
-              <div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:13px;">
-                <span style="width:18px;text-align:center;color:var(--accent);font-weight:600;font-size:11px;">${p.jersey}</span>
-                <span>${p.name}</span>
-                <span style="color:var(--muted2);font-size:10px;margin-left:auto;">${p.position}</span>
-              </div>
-            `).join('')}
-            <div style="font-weight:600;margin-top:10px;font-size:12px;color:var(--muted);">Cadangan</div>
-            ${r.players.filter(p => !p.starter).slice(0,5).map(p => `
-              <div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;">
-                <span style="width:18px;text-align:center;color:var(--muted2);font-weight:500;font-size:10px;">${p.jersey}</span>
-                <span>${p.name}</span>
+      <div id="detail-facts">
+        ${gameInfo.venue ? `
+        <div class="day-group">
+          <div class="day-header"><span class="day-name">Stadion</span></div>
+          <div style="font-size:13px;line-height:1.6;">
+            📍 ${gameInfo.venue}<br>
+            👥 ${gameInfo.attendance.toLocaleString()} / ${gameInfo.capacity.toLocaleString()} (${gameInfo.capacity ? Math.round(gameInfo.attendance/gameInfo.capacity*100) : '-'}%)<br>
+            🏟️ ${gameInfo.surface}
+          </div>
+        </div>` : ''}
+        
+        ${broadcasts.length ? `
+        <div class="day-group">
+          <div class="day-header"><span class="day-name">Siaran TV</span></div>
+          <div style="font-size:13px;color:var(--muted);">${broadcasts.join(', ')}</div>
+        </div>` : ''}
+        
+        ${form.length ? `
+        <div class="day-group">
+          <div class="day-header"><span class="day-name">5 Laga Terakhir</span></div>
+          ${form.map(t => `
+            <div style="margin-bottom:8px;font-size:13px;">
+              <span style="font-weight:600;">${t.team}</span>
+              <span style="float:right;display:flex;gap:4px;">${t.events.map(e => `
+                <span style="padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;
+                  background:${e.result==='W'?'rgba(34,197,94,0.2)':e.result==='L'?'rgba(239,68,68,0.2)':'rgba(255,255,255,0.05)'};
+                  color:${e.result==='W'?'#22c55e':e.result==='L'?'#ef4444':'var(--muted)'}">${e.result||'?'}</span>
+              `).join('')}</span>
+            </div>
+          `).join('')}
+        </div>` : ''}
+        
+        ${leaders.length ? `
+        <div class="day-group">
+          <div class="day-header"><span class="day-name">Top Pemain</span></div>
+          <div style="display:flex;gap:8px;overflow-x:auto;">
+            ${leaders.map(l => `
+              <div style="min-width:90px;background:var(--surface);border-radius:8px;padding:10px;text-align:center;">
+                <div style="font-size:20px;font-weight:800;color:var(--accent);">${l.rating.toFixed(1)}</div>
+                <div style="font-size:11px;font-weight:600;margin-top:4px;">${l.name.split(' ').pop()}</div>
+                <div style="font-size:10px;color:var(--muted);">${l.team}</div>
               </div>
             `).join('')}
           </div>
-        `).join('')}
+        </div>` : ''}
       </div>
       
-      ${gameInfo.venue ? `<div style="margin-top:16px;font-size:12px;color:var(--muted);">📍 ${gameInfo.venue}${gameInfo.attendance ? ' · ' + gameInfo.attendance.toLocaleString() + ' penonton' : ''}</div>` : ''}
+      <div id="detail-lineup" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          ${rosters.map(r => `
+            <div>
+              <div style="font-weight:700;margin-bottom:6px;font-size:13px;">${r.side || 'Tim'}</div>
+              ${r.players.filter(p => p.starter).map(p => `
+                <div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;border-bottom:1px solid var(--border);">
+                  <span style="width:18px;text-align:center;color:var(--accent);font-weight:600;">${p.jersey}</span>
+                  <span>${p.name}</span>
+                  <span style="color:var(--muted2);font-size:10px;margin-left:auto;">${p.position}</span>
+                </div>
+              `).join('')}
+              <div style="font-weight:600;margin-top:8px;font-size:11px;color:var(--muted);">Cadangan</div>
+              ${r.players.filter(p => !p.starter).map(p => `
+                <div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:11px;">
+                  <span style="width:18px;text-align:center;color:var(--muted2);">${p.jersey}</span>
+                  <span>${p.name}</span>
+                </div>
+              `).join('')}
+            </div>
+          `).join('')}
+        </div>
+      </div>
       
-      <div style="margin-top:20px;text-align:center;">
-        <button class="btn btn-primary" onclick="this.closest('.stream-modal').remove();watchMatch('${matchId}')" style="padding:12px 32px;font-size:14px;">
-          ▶ Tonton Live
-        </button>
+      <div id="detail-stats" style="display:none;">
+        ${stats.length >= 2 ? `
+        <table class="schedule-table"><thead><tr><th>Stat</th><th>${stats[0].team}</th><th>${stats[1].team||''}</th></tr></thead>
+        <tbody>${stats[0].statistics.map((s,i) => {
+          const v2 = stats[1]?.statistics?.[i]?.value || '-';
+          const v1n = parseFloat(s.value), v2n = parseFloat(v2);
+          const h1 = !isNaN(v1n) && !isNaN(v2n) && v1n > v2n;
+          const h2 = !isNaN(v1n) && !isNaN(v2n) && v2n > v1n;
+          return `<tr><td>${s.label}</td><td style="font-weight:${h1?700:400};color:${h1?'var(--accent)':'var(--text)'}">${s.value}</td><td style="font-weight:${h2?700:400};color:${h2?'var(--accent)':'var(--text)'}">${v2}</td></tr>`;
+        }).join('')}</tbody></table>` : ''}
+      </div>
+      
+      <div style="margin-top:16px;text-align:center;">
+        <button class="btn btn-primary" onclick="this.closest('.stream-modal').remove();watchMatch('${matchId}')" style="padding:10px 28px;font-size:13px;">▶ Tonton Live</button>
       </div>
     `;
   } catch (err) {
@@ -161,7 +214,16 @@ async function showMatchDetail(matchId) {
   }
 }
 
-// Watch match — open stream modal (original function, kept for watch button)
+// Switch detail tabs
+function switchDetailTab(btn, tab) {
+  btn.parentElement.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('detail-facts').style.display = tab === 'facts' ? '' : 'none';
+  document.getElementById('detail-lineup').style.display = tab === 'lineup' ? '' : 'none';
+  document.getElementById('detail-stats').style.display = tab === 'stats' ? '' : 'none';
+}
+
+// Watch match — open stream modal
 async function watchMatch(matchId) {
   const modal = document.createElement('div');
   modal.className = 'stream-modal';

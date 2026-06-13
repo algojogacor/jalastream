@@ -10,7 +10,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', name: 'JalaStream' }));
 
-// API: match detail (lineups, stats, possession, etc)
+// API: match detail
 app.get('/api/match/:id', async (req, res) => {
   try {
     const { data } = await axios.get(
@@ -30,18 +30,35 @@ app.get('/api/match/:id', async (req, res) => {
 
     const stats = (data.boxscore?.teams || []).map(t => ({
       team: t.team?.displayName || '?',
-      statistics: (t.statistics || []).map(s => ({
-        label: s.label || '?',
-        value: s.displayValue || s.value || '0',
+      statistics: (t.statistics || []).map(s => ({ label: s.label, value: s.displayValue || '0' })),
+    }));
+
+    const form = (data.lastFiveGames || []).map(t => ({
+      team: t.team?.displayName || '?',
+      events: (t.events || []).map(e => ({
+        opponent: e.opponent?.displayName || '?',
+        result: e.result || '?',
+        score: e.score || '?',
       })),
+    }));
+
+    const broadcasts = (data.broadcasts || []).slice(0, 5).map(b => b.media?.shortName || b.media?.name).filter(Boolean);
+    
+    const leaders = (data.leaders || []).slice(0, 6).map(l => ({
+      name: l.athlete?.fullName || '?',
+      team: l.team?.displayName || '?',
+      rating: l.value || 0,
+      label: l.label || '',
     }));
 
     const gameInfo = {
       venue: data.gameInfo?.venue?.fullName || '',
       attendance: data.gameInfo?.attendance || 0,
+      capacity: data.gameInfo?.venue?.capacity || 0,
+      surface: data.gameInfo?.venue?.grass ? 'Grass' : 'Artificial',
     };
 
-    res.json({ rosters, stats, gameInfo });
+    res.json({ rosters, stats, form, broadcasts, leaders, gameInfo });
   } catch (err) {
     res.status(502).json({ error: 'Failed to fetch match detail' });
   }
