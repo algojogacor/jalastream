@@ -122,15 +122,64 @@ async function fetchStreamUrl(matchId) {
   return { type: 'hls', src: `/proxy/stream/${match.id}` };
 }
 
-// Return group data (hardcoded draw — ESPN groups API doesn't have teams yet)
 async function fetchGroups() {
-  return WORLD_CUP_GROUPS.map(g => ({
-    name: g.name,
-    teams: g.teams.map(code => ({
-      name: code,
-      code: code.toLowerCase(),
-    })),
-  }));
+  // Try to compute standings from match results
+  try {
+    const { data } = await axios.get(ESPN_API, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 10000,
+    });
+    
+    const standings = {};
+    for (const event of (data.events || [])) {
+      const comp = event.competitions?.[0];
+      const teams = comp?.competitors || [];
+      if (teams.length < 2) continue;
+      
+      const st = event.status?.type?.state;
+      if (st !== 'post') continue; // only completed matches
+      
+      const h = teams[0]; const a = teams[1];
+      const hAbbr = h.team?.abbreviation || h.team?.name;
+      const aAbbr = a.team?.abbreviation || a.team?.name;
+      const hScore = parseInt(h.score) || 0;
+      const aScore = parseInt(a.score) || 0;
+      
+      // Init team records
+      [hAbbr, aAbbr].forEach(t => {
+        if (!standings[t]) standings[t] = { name: t, code: t.toLowerCase(), p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 };
+      });
+      
+      // Update stats
+      standings[hAbbr].p++; standings[aAbbr].p++;
+      standings[hAbbr].gf += hScore; standings[hAbbr].ga += aScore;
+      standings[aAbbr].gf += aScore; standings[aAbbr].ga += hScore;
+      
+      if (hScore > aScore) {
+        standings[hAbbr].w++; standings[hAbbr].pts += 3;
+        standings[aAbbr].l++;
+      } else if (aScore > hScore) {
+        standings[aAbbr].w++; standings[aAbbr].pts += 3;
+        standings[hAbbr].l++;
+      } else {
+        standings[hAbbr].d++; standings[aAbbr].d++;
+        standings[hAbbr].pts++; standings[aAbbr].pts++;
+      }
+    }
+
+    // Assign teams to groups with standings
+    return WORLD_CUP_GROUPS.map(g => ({
+      name: g.name,
+      teams: g.teams
+        .map(code => standings[code] || { name: code, code: code.toLowerCase(), p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 })
+        .sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf),
+    }));
+  } catch {
+    // Fallback: just team names
+    return WORLD_CUP_GROUPS.map(g => ({
+      name: g.name,
+      teams: g.teams.map(code => ({ name: code, code: code.toLowerCase(), p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 })),
+    }));
+  }
 }
 
 module.exports = { fetchAndParseLive, fetchAndParseSchedule, fetchStreamUrl, fetchGroups };

@@ -191,16 +191,25 @@ async function loadGroups() {
       <div class="day-group">
         <div class="day-header">
           <span class="day-name">${g.name}</span>
-          <span class="match-count">${g.teams.length} tim</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;">
-          ${g.teams.map(t => `
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-radius:8px;">
-              <img src="https://a.espncdn.com/i/teamlogos/countries/500/${t.code}.png" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display='none'">
-              <span style="font-size:13px;font-weight:500">${t.name}</span>
-            </div>
-          `).join('')}
-        </div>
+        <table class="schedule-table" style="font-size:13px;">
+          <thead><tr>
+            <th>Tim</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th>
+          </tr></thead>
+          <tbody>
+            ${g.teams.map((t,i) => `
+              <tr style="${i < 2 ? 'border-left:3px solid var(--accent);' : ''}">
+                <td style="display:flex;align-items:center;gap:8px;">
+                  <img src="https://a.espncdn.com/i/teamlogos/countries/500/${t.code}.png" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display='none'">
+                  <span style="font-weight:500">${t.name}</span>
+                </td>
+                <td>${t.p}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
+                <td>${t.gf}</td><td>${t.ga}</td><td>${t.gf - t.ga}</td>
+                <td style="font-weight:700">${t.pts}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
       </div>
     `).join('');
     el.dataset.loaded = '1';
