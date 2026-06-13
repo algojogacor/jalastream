@@ -251,8 +251,12 @@
 <header>
   <div class="logo">Jala<span>Stream</span></div>
   <nav>
-    <a href="#" class="active">Live</a>
+    <a href="#" class="active" onclick="showTab('live')">Live</a>
     <a href="#" onclick="showTab('schedule')">Jadwal</a>
+    <a href="#" onclick="showTab('groups')">Grup</a>
+    <a href="#" onclick="showTab('standings')">Klasemen</a>
+    <a href="#" onclick="showTab('bracket')">Bracket</a>
+    <a href="#" onclick="showTab('topscorers')">Top Skor</a>
   </nav>
   <div class="header-right">
     <input class="search-box" type="text" placeholder="Cari tim atau pertandingan..." oninput="searchMatches(this.value)">
@@ -305,17 +309,35 @@
 
   <!-- SCHEDULE TAB -->
   <div id="tab-schedule" style="display:none">
-    <div class="section-header">
-      <div class="section-title">Jadwal Pertandingan</div>
-    </div>
+    <div class="section-header"><div class="section-title">Jadwal Pertandingan</div></div>
     <table class="schedule-table">
-      <thead>
-        <tr><th>Waktu</th><th>Pertandingan</th><th>Liga</th></tr>
-      </thead>
-      <tbody id="schedule-body">
-        <tr><td colspan="3" class="empty">Memuat...</td></tr>
-      </tbody>
+      <thead><tr><th>Waktu</th><th>Pertandingan</th><th>Liga</th></tr></thead>
+      <tbody id="schedule-body"><tr><td colspan="3" class="empty">Memuat...</td></tr></tbody>
     </table>
+  </div>
+
+  <!-- GROUPS TAB -->
+  <div id="tab-groups" style="display:none">
+    <div class="section-header"><div class="section-title">Grup Piala Dunia 2026</div></div>
+    <div id="groups-content" class="empty">Memuat data grup...</div>
+  </div>
+
+  <!-- STANDINGS TAB -->
+  <div id="tab-standings" style="display:none">
+    <div class="section-header"><div class="section-title">Klasemen</div></div>
+    <div id="standings-content" class="empty">Memuat klasemen...</div>
+  </div>
+
+  <!-- BRACKET TAB -->
+  <div id="tab-bracket" style="display:none">
+    <div class="section-header"><div class="section-title">Bracket Knockout</div></div>
+    <div id="bracket-content" class="empty">Bracket akan tersedia setelah fase grup selesai</div>
+  </div>
+
+  <!-- TOP SCORERS TAB -->
+  <div id="tab-topscorers" style="display:none">
+    <div class="section-header"><div class="section-title">Top Skor</div></div>
+    <div id="topscorers-content" class="empty">Data top skor akan tersedia segera</div>
   </div>
 </div>
 

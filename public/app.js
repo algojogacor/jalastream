@@ -130,10 +130,25 @@ async function watchMatch(matchId) {
 // Tab switching
 function showTab(tab) {
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
-  document.querySelector(`nav a[onclick*="${tab}"]`)?.classList.add('active');
-  $('#tab-live').style.display = tab === 'live' ? '' : 'none';
-  $('#tab-schedule').style.display = tab === 'schedule' ? '' : 'none';
+  // Find the matching nav link
+  const links = document.querySelectorAll('nav a');
+  const tabMap = {live:0, schedule:1, groups:2, standings:3, bracket:4, topscorers:5};
+  const idx = tabMap[tab] || 0;
+  if (links[idx]) links[idx].classList.add('active');
+  
+  // Hide all tabs
+  ['live','schedule','groups','standings','bracket','topscorers'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.style.display = 'none';
+  });
+  
+  // Show selected
+  const target = document.getElementById('tab-' + tab);
+  if (target) target.style.display = '';
+  
   if (tab === 'schedule') loadSchedule();
+  if (tab === 'groups') loadGroups();
+  if (tab === 'standings') loadStandings();
 }
 
 // Init
@@ -160,4 +175,44 @@ function toggleTheme() {
   } else {
     btn.textContent = '☀️';
   }
+}
+
+// Load groups from ESPN API
+async function loadGroups() {
+  const el = document.getElementById('groups-content');
+  if (!el || el.dataset.loaded) return;
+  
+  try {
+    const res = await fetch(`${API}/groups`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const { groups } = await res.json();
+    
+    el.innerHTML = groups.map(g => `
+      <div class="day-group">
+        <div class="day-header">
+          <span class="day-name">${g.name}</span>
+          <span class="match-count">${g.teams.length} tim</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;">
+          ${g.teams.map(t => `
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-radius:8px;">
+              <img src="https://a.espncdn.com/i/teamlogos/countries/500/${t.code}.png" style="width:20px;height:20px;object-fit:contain" onerror="this.style.display='none'">
+              <span style="font-size:13px;font-weight:500">${t.name}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+    el.dataset.loaded = '1';
+  } catch (err) {
+    el.innerHTML = '<div class="empty">Gagal memuat data grup</div>';
+  }
+}
+
+// Load standings
+async function loadStandings() {
+  const el = document.getElementById('standings-content');
+  if (!el || el.dataset.loaded) return;
+  el.innerHTML = '<div class="empty">Klasemen akan tersedia setelah pertandingan grup berjalan</div>';
+  el.dataset.loaded = '1';
 }

@@ -12,6 +12,26 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', name: 'JalaStream' }));
 
+// API: groups
+app.get('/api/groups', async (req, res) => {
+  try {
+    const { data } = await axios.get('https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/groups', {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      timeout: 10000,
+    });
+    const groups = (data.groups || []).map(g => ({
+      name: g.name,
+      teams: (g.teams || []).map(t => ({
+        name: t.team?.displayName || t.team?.name,
+        code: (t.team?.abbreviation || '').toLowerCase(),
+      })),
+    }));
+    res.json({ groups });
+  } catch (err) {
+    res.status(502).json({ error: 'Failed to fetch groups' });
+  }
+});
+
 // Proxy: serve embed.st page with ad scripts stripped
 app.get('/proxy/stream/:matchId', async (req, res) => {
   try {
