@@ -1,18 +1,5 @@
-// JalaStream — Live match data + RBTV+ player URLs
-// Architecture: direct player iframe (skip homepage ads)
-// Player formula: {playerDomain}/id/player.html?mdata={base64(matchId_sportType)}&ilang=id
-
-const PLAYER_DOMAINS = [
-  'https://lola30es.mpipzni2naturally32kistomach.ru',
-  'https://brit01bp.spipm31ozprintedddekroute.ru',
-  'https://mimi.ay15cjseldom8egjwpresident.cfd',
-  'https://brit09bp.spipm31ozprintedddekroute.ru',
-  'https://nia01.x6tc9bgreatlyty35swriting.cfd',
-];
-
-function encodeMatchData(matchId, sportType) {
-  return Buffer.from(`${matchId}_${sportType}`).toString('base64');
-}
+// JalaStream — Live match data + play site URLs
+// Player iframe works only with valid referer, so use full play site page
 
 const MATCHES = [
   {
@@ -25,6 +12,8 @@ const MATCHES = [
     clock: "45+'",
     sport: "football",
     sportType: 1,
+    // Play site URL — player works here with proper referer
+    playSiteUrl: "https://nia01.x6tc9bgreatlyty35swriting.cfd/id/football/fifa-world-cup-4318059/usa-vs-paraguay.html?icg=SUQ&ilang=id",
   },
   {
     id: "wc-ger-fra",
@@ -96,24 +85,24 @@ async function fetchStreamUrl(matchId) {
   const match = MATCHES.find(m => m.id === matchId) || 
                 MATCHES.find(m => String(m.id) === String(matchId));
   
-  if (!match || !match.sportType) {
+  if (!match) {
+    return { type: "none", message: "Match tidak ditemukan" };
+  }
+
+  if (match.playSiteUrl) {
     return {
       type: "iframe",
-      iframeUrl: PLAYER_DOMAINS[0] + '/id/player.html?ilang=id',
-      fallbackUrl: PLAYER_DOMAINS[1] + '/id/player.html?ilang=id',
+      iframeUrl: match.playSiteUrl,
+      fallbackUrl: match.playSiteUrl,
     };
   }
 
-  const mdata = encodeMatchData(match.id, match.sportType);
-  const primaryDomain = PLAYER_DOMAINS[0];
-  const fallbackDomain = PLAYER_DOMAINS[1];
-
+  // Fallback: generic player URL
+  const playerBase = 'https://nia01.x6tc9bgreatlyty35swriting.cfd';
   return {
     type: "iframe",
-    iframeUrl: `${primaryDomain}/id/player.html?mdata=${mdata}&ilang=id`,
-    fallbackUrl: `${fallbackDomain}/id/player.html?mdata=${mdata}&ilang=id`,
-    // Additional player domains for client-side fallback
-    domains: PLAYER_DOMAINS,
+    iframeUrl: `${playerBase}/id/player.html?ilang=id`,
+    fallbackUrl: `${playerBase}/id/player.html?ilang=id`,
   };
 }
 
