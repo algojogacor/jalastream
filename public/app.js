@@ -68,16 +68,47 @@ async function loadLive() {
   }
 }
 
-// Watch a match — open in new tab (anti X-Frame-Options block)
+// Watch a match — modal iframe (YouTube HD embed)
 async function watchMatch(matchId) {
+  const modal = document.createElement('div');
+  modal.className = 'stream-modal';
+  modal.innerHTML = `
+    <div class="stream-modal-backdrop" onclick="this.parentElement.remove()"></div>
+    <div class="stream-modal-content">
+      <div class="stream-modal-header">
+        <span>JalaStream Live</span>
+        <button class="stream-modal-close" onclick="this.closest('.stream-modal').remove()">✕</button>
+      </div>
+      <div class="stream-modal-body">
+        <div class="empty">Memuat stream...</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
   try {
     const res = await fetch(`${API}/stream/${matchId}`);
     const data = await res.json();
-    if (data.type === 'iframe' && data.iframeUrl) {
+    const body = modal.querySelector('.stream-modal-body');
+    
+    if (data.type === 'youtube') {
+      body.innerHTML = `
+        <iframe
+          src="${data.embedUrl}"
+          allowfullscreen
+          allow="autoplay; encrypted-media; picture-in-picture"
+          style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"
+        ></iframe>
+      `;
+    } else if (data.type === 'iframe' && data.iframeUrl) {
       window.open(data.iframeUrl, '_blank');
+      modal.remove();
+    } else {
+      body.innerHTML = `<div class="empty">${data.message || 'Stream belum tersedia'}</div>`;
     }
   } catch (err) {
-    alert('Gagal memuat stream.');
+    modal.querySelector('.stream-modal-body').innerHTML =
+      '<div class="empty">Gagal memuat stream.</div>';
   }
 }
 

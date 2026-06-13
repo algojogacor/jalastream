@@ -12,8 +12,8 @@ const MATCHES = [
     clock: "45+'",
     sport: "football",
     sportType: 1,
-    // Play site URL — player works here with proper referer
-    playSiteUrl: "https://nia01.x6tc9bgreatlyty35swriting.cfd/id/football/fifa-world-cup-4318059/usa-vs-paraguay.html?icg=SUQ&ilang=id",
+    // CazéTV YouTube — perlu VPN Brazil di device
+    youtubeId: "7EFTDmwcleI", // AO VIVO USA vs Paraguay
   },
   {
     id: "wc-ger-fra",
@@ -89,21 +89,15 @@ async function fetchStreamUrl(matchId) {
     return { type: "none", message: "Match tidak ditemukan" };
   }
 
-  if (match.playSiteUrl) {
+  if (match.youtubeId) {
     return {
-      type: "iframe",
-      iframeUrl: match.playSiteUrl,
-      fallbackUrl: match.playSiteUrl,
+      type: "youtube",
+      embedUrl: `https://www.youtube.com/embed/${match.youtubeId}?autoplay=1`,
+      watchUrl: `https://www.youtube.com/watch?v=${match.youtubeId}`,
     };
   }
 
-  // Fallback: generic player URL
-  const playerBase = 'https://nia01.x6tc9bgreatlyty35swriting.cfd';
-  return {
-    type: "iframe",
-    iframeUrl: `${playerBase}/id/player.html?ilang=id`,
-    fallbackUrl: `${playerBase}/id/player.html?ilang=id`,
-  };
+  return { type: "none", message: "Stream belum tersedia untuk match ini" };
 }
 
 module.exports = { fetchAndParseLive, fetchAndParseSchedule, fetchStreamUrl };
