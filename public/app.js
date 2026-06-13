@@ -162,7 +162,8 @@ function showTab(tab){
   const target=document.getElementById('tab-'+tab);if(target)target.style.display='';
   if(tab==='schedule')loadSchedule();
   if(tab==='groups')loadGroups();
-  if(tab==='standings')loadStandings()
+  if(tab==='standings')loadStandings();
+  if(tab==='topscorers')loadTopScorers()
 }
 async function loadGroups(){
   const el=document.getElementById('groups-content');if(!el||el.dataset.loaded)return;
@@ -172,7 +173,24 @@ async function loadGroups(){
     el.dataset.loaded='1'
   }catch(e){el.innerHTML='<div class="empty">Gagal memuat</div>'}
 }
-async function loadStandings(){const el=document.getElementById('standings-content');if(!el||el.dataset.loaded)return;el.innerHTML='<div class="empty">Klasemen akan tersedia setelah pertandingan grup berjalan</div>';el.dataset.loaded='1'}
+async function loadStandings(){
+  const el=document.getElementById('standings-content');
+  if(!el||el.dataset.loaded)return;
+  showTab('groups'); // Redirect to Grup tab
+  el.dataset.loaded='1'
+}
+async function loadTopScorers(){
+  const el=document.getElementById('topscorers-content');
+  if(!el||el.dataset.loaded)return;
+  try{
+    const res=await fetch(`${API}/topscorers`);
+    const {scorers}=await res.json();
+    el.innerHTML=`<div class="day-group"><div class="day-header"><span class="day-name">Top Skor</span></div>
+      <table class="schedule-table" style="font-size:13px"><thead><tr><th>#</th><th>Pemain</th><th>Tim</th><th>Gol</th></tr></thead>
+      <tbody>${scorers.map((s,i)=>`<tr><td style="font-weight:700">${i+1}</td><td>${s.name}</td><td style="display:flex;align-items:center;gap:6px"><img src="https://a.espncdn.com/i/teamlogos/countries/500/${s.team.toLowerCase()}.png" style="width:18px;height:18px;object-fit:contain" onerror="this.style.display='none'">${s.team}</td><td style="font-weight:700;color:var(--accent)">${s.goals}</td></tr>`).join('')}</tbody></table></div>`;
+    el.dataset.loaded='1'
+  }catch(e){el.innerHTML='<div class="empty">Gagal memuat</div>'}
+}
 
 // Search + Theme
 function searchMatches(q){document.querySelectorAll('.live-card').forEach(c=>{c.style.display=q?c.textContent.toLowerCase().includes(q.toLowerCase())?'':'none':''})}

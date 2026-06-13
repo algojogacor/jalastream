@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const axios = require('axios');
-const { fetchAndParseLive, fetchAndParseSchedule, fetchStreamUrl, fetchGroups } = require('./scraper');
+const { fetchAndParseLive, fetchAndParseSchedule, fetchStreamUrl, fetchGroups, fetchTopScorers } = require('./scraper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -96,6 +96,11 @@ app.get('/api/stream/:id', async (req, res) => {
 app.get('/api/groups', async (req, res) => {
   try { const groups = await fetchGroups(); res.json({ groups }); }
   catch (err) { res.status(502).json({ error: 'Failed to fetch groups' }); }
+});
+
+app.get('/api/topscorers', async (req, res) => {
+  try { const scorers = await fetchTopScorers(); res.json({ scorers }); }
+  catch (err) { res.status(502).json({ error: 'Failed to fetch top scorers' }); }
 });
 
 app.get('/{*splat}', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));

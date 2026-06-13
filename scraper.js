@@ -128,12 +128,11 @@ async function fetchAndParseSchedule() {
 }
 
 async function fetchStreamUrl(matchId) {
-  const data = await fetchAndParseLive();
-  const all = data.all || data.live || [];
-  const match = all.find(m => m.id === matchId || String(m.id) === String(matchId));
-  if (!match) return { type: 'none', message: 'Match tidak ditemukan' };
-  if (!match.embedUrl) return { type: 'none', message: 'Stream belum tersedia' };
-  return { type: 'hls', src: `/proxy/stream/${match.id}` };
+  // Use worldcupscore.me stream page (no X-Frame-Options, embeddable)
+  return {
+    type: 'iframe',
+    iframeUrl: `https://www.worldcupscore.me/stream/${matchId}?tab=wc`,
+  };
 }
 
 async function fetchGroups() {
@@ -196,4 +195,18 @@ async function fetchGroups() {
   }
 }
 
-module.exports = { fetchAndParseLive, fetchAndParseSchedule, fetchStreamUrl, fetchGroups };
+async function fetchTopScorers() {
+  // Hardcoded from completed match results (ESPN doesn't have a scorers endpoint)
+  return [
+    { name: 'Christian Pulisic', team: 'USA', goals: 2 },
+    { name: 'Santiago Gimenez', team: 'MEX', goals: 1 },
+    { name: 'Julian Quinones', team: 'MEX', goals: 1 },
+    { name: 'Cyle Larin', team: 'CAN', goals: 1 },
+    { name: 'Josip Lukic', team: 'BIH', goals: 1 },
+    { name: 'Giovanni Reyna', team: 'USA', goals: 1 },
+    { name: 'Cho Gue-sung', team: 'KOR', goals: 1 },
+    { name: 'Patrik Schick', team: 'CZE', goals: 1 },
+  ];
+}
+
+module.exports = { fetchAndParseLive, fetchAndParseSchedule, fetchStreamUrl, fetchGroups, fetchTopScorers };
