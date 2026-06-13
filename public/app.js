@@ -29,15 +29,56 @@ async function loadLive(){
 
 // Load schedule
 async function loadSchedule(){
-  const tbody=$('#schedule-body');
-  if(!tbody)return;
-  tbody.innerHTML='<tr><td colspan="3" class="empty">Memuat...</td></tr>';
+  const el = $('#schedule-content');
+  if(!el)return;
+  el.innerHTML='<div class="empty">Memuat...</div>';
   try{
     const res=await fetch(`${API}/schedule`);
     const {days}=await res.json();
-    if(!days.length){tbody.innerHTML='<tr><td colspan="3" class="empty">Belum ada jadwal</td></tr>';return}
-    tbody.innerHTML=days.flatMap(d=>d.matches.map(m=>`<tr><td class="time">${m.time}</td><td class="teams">${m.home} <span style="color:var(--muted)">VS</span> ${m.away}</td><td class="league">${m.league}</td></tr>`)).join('');
-  }catch(e){tbody.innerHTML='<tr><td colspan="3" class="empty">Gagal memuat</td></tr>'}
+    if(!days.length){el.innerHTML='<div class="empty">Belum ada jadwal</div>';return}
+    
+    el.innerHTML = days.map(day => `
+      <div class="day-group">
+        <div class="day-header">
+          <span class="day-name">${day.label}</span>
+          <span>${day.date}</span>
+          <span class="match-count">${day.matches.length} pertandingan</span>
+        </div>
+        <div class="live-grid">
+          ${day.matches.map(m => {
+            const hasScore = m.time === 'FT';
+            return `
+            <div class="live-card" style="${hasScore ? '' : 'cursor:default;'}${hasScore ? 'cursor:pointer;' : ''}">
+              <div class="card-league">
+                <div class="card-league-icon football">⚽️</div>
+                ${m.league}
+              </div>
+              <div class="card-match">
+                <div class="card-team">
+                  <div class="card-crest">🏴</div>
+                  <div>
+                    <div class="card-team-name">${m.home.split(' ')[0]}</div>
+                    <div class="card-team-sub">${m.home}</div>
+                  </div>
+                </div>
+                <div class="card-score">
+                  <div class="card-score-num">${hasScore ? m.home.split(' ').slice(-1)[0] : '–'}</div>
+                  <div class="card-score-clock">${m.time}</div>
+                </div>
+                <div class="card-team right">
+                  <div class="card-crest">🏴</div>
+                  <div>
+                    <div class="card-team-name">${m.away}</div>
+                    <div class="card-team-sub">${m.away}</div>
+                  </div>
+                </div>
+              </div>
+            </div>`
+          }).join('')}
+        </div>
+      </div>
+    `).join('');
+  }catch(e){el.innerHTML='<div class="empty">Gagal memuat</div>'}
 }
 
 // Stream modal
