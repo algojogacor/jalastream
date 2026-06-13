@@ -55,9 +55,9 @@ async function loadSchedule(){
               </div>
               <div class="card-match">
                 <div class="card-team">
-                  <div class="card-crest">🏴</div>
+                  <div class="card-crest">${m.homeFlag || '🏴'}</div>
                   <div>
-                    <div class="card-team-name">${m.home.split(' ')[0]}</div>
+                    <div class="card-team-name">${m.homeShort || m.home.split(' ')[0]}</div>
                     <div class="card-team-sub">${m.home.split(' ').slice(1).join(' ') || m.home}</div>
                   </div>
                 </div>
@@ -66,9 +66,9 @@ async function loadSchedule(){
                   <div class="card-score-clock">${m.time}</div>
                 </div>
                 <div class="card-team right">
-                  <div class="card-crest">🏴</div>
+                  <div class="card-crest">${m.awayFlag || '🏴'}</div>
                   <div>
-                    <div class="card-team-name">${m.away}</div>
+                    <div class="card-team-name">${m.awayShort || m.away}</div>
                     <div class="card-team-sub">${m.away}</div>
                   </div>
                 </div>

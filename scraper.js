@@ -105,13 +105,13 @@ async function fetchAndParseSchedule() {
     if (completed.length) {
       days.push({
         label: 'Selesai', date: new Date().toISOString().split('T')[0],
-        matches: completed.map(m => ({ id: m.id, time: 'FT', home: m.home, away: m.away, league: m.league, sport: m.sport, score: m.score })),
+        matches: completed.map(m => ({ id: m.id, time: 'FT', home: m.home, homeShort: m.homeShort, homeFlag: m.homeFlag, away: m.away, awayShort: m.awayShort, awayFlag: m.awayFlag, league: m.league, sport: m.sport, score: m.score })),
       });
     }
     if (upcoming.length) {
       days.push({
         label: 'Mendatang', date: new Date().toISOString().split('T')[0],
-        matches: upcoming.map(m => ({ id: m.id, time: m.clock, home: m.home, away: m.away, league: m.league, sport: m.sport })),
+        matches: upcoming.map(m => ({ id: m.id, time: m.clock, home: m.home, homeShort: m.homeShort, homeFlag: m.homeFlag, away: m.away, awayShort: m.awayShort, awayFlag: m.awayFlag, league: m.league, sport: m.sport })),
       });
     }
     return days;
