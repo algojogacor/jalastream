@@ -68,36 +68,16 @@ async function loadLive() {
   }
 }
 
-// Watch a match — open in new tab (can't iframe due to X-Frame-Options)
+// Watch a match — open in new tab (anti X-Frame-Options block)
 async function watchMatch(matchId) {
   try {
     const res = await fetch(`${API}/stream/${matchId}`);
     const data = await res.json();
-    
     if (data.type === 'iframe' && data.iframeUrl) {
-      // Open directly in new tab — no iframe blocking
       window.open(data.iframeUrl, '_blank');
-      return;
     }
-    
-    // Fallback: modal for other types
-    const modal = document.createElement('div');
-    modal.className = 'stream-modal';
-    modal.innerHTML = `
-      <div class="stream-modal-backdrop" onclick="this.parentElement.remove()"></div>
-      <div class="stream-modal-content">
-        <div class="stream-modal-header">
-          <span>JalaStream Live</span>
-          <button class="stream-modal-close" onclick="this.closest('.stream-modal').remove()">✕</button>
-        </div>
-        <div class="stream-modal-body">
-          <div class="empty">${data.message || 'Stream belum tersedia'}</div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
   } catch (err) {
-    alert('Gagal memuat stream. Coba lagi.');
+    alert('Gagal memuat stream.');
   }
 }
 
