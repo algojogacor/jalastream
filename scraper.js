@@ -1,8 +1,12 @@
-// JalaStream — ESPN API + embed.st proxy + hardcoded World Cup groups
+// JalaStream — ESPN API + embed.st proxy
 const axios = require('axios');
 
 const ESPN_API = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719';
 const ESPN_CDN = 'https://a.espncdn.com/i/teamlogos/countries/500';
+
+// Cache: 60s TTL to avoid rate limits
+let cache = { data: null, at: 0, schedule: null, scheduleAt: 0 };
+const CACHE_TTL = 60_000;
 
 // World Cup 2026 official group draw
 const WORLD_CUP_GROUPS = [
@@ -27,6 +31,9 @@ function getEmbedUrl(team1, team2) {
 
 async function fetchAndParseLive() {
   try {
+    // Return cache if fresh
+    if (cache.data && (Date.now() - cache.at) < CACHE_TTL) return cache.data;
+
     const { data } = await axios.get(ESPN_API, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0.0.0' },
       timeout: 10000,
@@ -85,10 +92,12 @@ async function fetchAndParseLive() {
     }
 
     matches.sort((a, b) => a.sort - b.sort);
-    
-    // Separate: only live + completed for the "live" display
     const liveAndDone = matches.filter(m => m.sort === 0 || m.sort === 2);
-    return { all: matches, live: liveAndDone };
+    
+    // Save cache
+    cache.data = { all: matches, live: liveAndDone };
+    cache.at = Date.now();
+    return cache.data;
   } catch (err) {
     console.error('[ESPN]', err.message);
     return [];
