@@ -101,8 +101,15 @@ async function watchMatch(matchId) {
         ></iframe>
       `;
     } else if (data.type === 'iframe' && data.iframeUrl) {
-      window.open(data.iframeUrl, '_blank');
-      modal.remove();
+      // worldcupscore / embed.st — no X-Frame-Options
+      body.innerHTML = `
+        <iframe
+          src="${data.iframeUrl}"
+          allowfullscreen
+          allow="autoplay; encrypted-media"
+          style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"
+        ></iframe>
+      `;
     } else {
       body.innerHTML = `<div class="empty">${data.message || 'Stream belum tersedia'}</div>`;
     }

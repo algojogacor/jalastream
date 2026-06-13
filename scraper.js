@@ -1,5 +1,5 @@
-// JalaStream — Live match data + play site URLs
-// Player iframe works only with valid referer, so use full play site page
+// JalaStream — World Cup match data + worldcupscore.me streams
+// Source: worldcupscore.me — clean, JW Player embed, no X-Frame-Options
 
 const MATCHES = [
   {
@@ -11,20 +11,19 @@ const MATCHES = [
     league: "Piala Dunia 2026 · Grup A",
     clock: "45+'",
     sport: "football",
-    sportType: 1,
-    // CazéTV YouTube — perlu VPN Brazil di device
-    youtubeId: "7EFTDmwcleI", // AO VIVO USA vs Paraguay
+    // worldcupscore.me stream — embeddable, JW Player, 8 servers
+    streamUrl: "https://www.worldcupscore.me/stream/4318059?tab=wc",
   },
   {
-    id: "wc-ger-fra",
-    home: "Jerman",
-    homeShort: "GER",
-    away: "Prancis",
-    awayShort: "FRA",
+    id: "4667758",
+    home: "Qatar",
+    homeShort: "QAT",
+    away: "Switzerland",
+    awayShort: "SUI",
     league: "Piala Dunia 2026 · Grup B",
-    clock: "82'",
+    clock: "02:00",
     sport: "football",
-    sportType: 1,
+    streamUrl: "https://www.worldcupscore.me/stream/4667758?tab=wc",
   },
   {
     id: "nba-lal-mia",
@@ -35,18 +34,6 @@ const MATCHES = [
     league: "NBA Playoffs",
     clock: "Q3 · 4:12",
     sport: "basketball",
-    sportType: 2,
-  },
-  {
-    id: "nba-bos-gsw",
-    home: "Boston Celtics",
-    homeShort: "BOS",
-    away: "Golden State",
-    awayShort: "GSW",
-    league: "NBA Playoffs",
-    clock: "Q4 · 2:38",
-    sport: "basketball",
-    sportType: 2,
   },
 ];
 
@@ -89,15 +76,14 @@ async function fetchStreamUrl(matchId) {
     return { type: "none", message: "Match tidak ditemukan" };
   }
 
-  if (match.youtubeId) {
+  if (match.streamUrl) {
     return {
-      type: "youtube",
-      embedUrl: `https://www.youtube.com/embed/${match.youtubeId}?autoplay=1`,
-      watchUrl: `https://www.youtube.com/watch?v=${match.youtubeId}`,
+      type: "iframe",
+      iframeUrl: match.streamUrl,
     };
   }
 
-  return { type: "none", message: "Stream belum tersedia untuk match ini" };
+  return { type: "none", message: "Stream belum tersedia" };
 }
 
 module.exports = { fetchAndParseLive, fetchAndParseSchedule, fetchStreamUrl };
