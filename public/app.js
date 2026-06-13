@@ -107,7 +107,7 @@ function S(stats){
 }
 function T(group){
   if(!group)return'<div class="empty">Klasemen belum tersedia</div>';
-  return`<div class="day-group"><div class="day-header"><span class="day-name">${group.name}</span></div><div class="schedule-table-wrapper"><table class="schedule-table" style="font-size:12px"><thead><tr><th>Tim</th><th>P</th><th>GD</th><th>Pts</th></tr></thead><tbody>${group.teams.map((t,i)=>`<tr style="${i<2?'border-left:3px solid var(--accent);':''}${t.pts>0?'font-weight:600':''}"><td style="display:flex;align-items:center;gap:6px"><img src="https://a.espncdn.com/i/teamlogos/countries/500/${t.code}.png" style="width:18px;height:18px;object-fit:contain" onerror="this.style.display='none'">${t.name}</td><td>${t.p}</td><td>${t.gf-t.ga}</td><td style="font-weight:700">${t.pts}</td></tr>`).join('')}</tbody></table></div></div>`
+ return`<div class="day-group"><div class="day-header"><span class="day-name">${group.name}</span></div><div class="schedule-table-wrapper"><table class="schedule-table" style="font-size:12px"><thead><tr><th>Tim</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead><tbody>${group.teams.map((t,i)=>`<tr style="${i<2?'border-left:3px solid var(--accent);':''}"><td style="display:flex;align-items:center;gap:6px"><img src="https://a.espncdn.com/i/teamlogos/countries/500/${t.code}.png" style="width:18px;height:18px;object-fit:contain" onerror="this.style.display='none'"><span style="font-weight:500">${t.name}</span></td><td>${t.p}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td><td>${t.gf}</td><td>${t.ga}</td><td>${t.gf-t.ga}</td><td style="font-weight:700">${t.pts}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
 
 // Navigation tabs
