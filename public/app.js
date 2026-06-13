@@ -102,6 +102,20 @@ async function watchMatch(matchId) {
           style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"
         ></iframe>
       `;
+    } else if (data.type === 'iframe') {
+      // RBTV+ player — auto-failover
+      const iframeUrl = data.iframeUrl;
+      const fallback = data.fallbackUrl || iframeUrl;
+      body.innerHTML = `
+        <iframe
+          src="${iframeUrl}"
+          allowfullscreen
+          allow="autoplay; encrypted-media"
+          referrerpolicy="no-referrer"
+          style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;"
+          onerror="this.src='${fallback}'"
+        ></iframe>
+      `;
     } else if (data.type === 'none') {
       body.innerHTML = `<div class="empty">${data.message || 'Stream belum tersedia'}</div>`;
     } else {
